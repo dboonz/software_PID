@@ -1,5 +1,6 @@
 import threading
 import time
+from Regulators import HighTemperatureException, LowTemperatureException
 
 class Regulator(threading.Thread):
     def __init__(self, configurationfile, name):
@@ -23,6 +24,8 @@ class Regulator(threading.Thread):
         self.time_between_measurements = 3 #  time between two measurements
         self.feedback_deadtime = 1 #  time between two runs of the
         # feedback loop
+        self.max_signal = 2
+        self.min_signal = 0
 
         # devices for feedback
         from Regulators import T255ControllerSim
@@ -62,13 +65,22 @@ class Regulator(threading.Thread):
             if mean > self.max_signal:
                 if debug:
                     print "Performing negative feedback"
-                self.regulator.perform_negative_feedback()
+                try :
+                    self.regulator.perform_negative_feedback()
+                except HighTemperatureException:
+                    print "Could not perform feedback, because on a temp limit"
+                except LowTemperatureException:
+                    print "Lower feedback limit reached"
 
             elif mean < self.min_signal:
                 if debug:
                     print "Performing positive feedback"
-                self.regulator.perform_positive_feedback()
-
+                try:
+                    self.regulator.perform_positive_feedback()
+                except HighTemperatureException:
+                    print "Could not perform feedback, because on a temp limit"
+                except LowTemperatureException:
+                    print "Lower temperature limit reached "
 if __name__ == '__main__':
     regulator = Regulator("bla", "bla")
     regulator.start()
