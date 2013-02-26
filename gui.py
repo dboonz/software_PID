@@ -48,6 +48,16 @@ def updategraph():
     a.set_xlim(min(datagen.x), max(datagen.x))
     canvas.draw()
 
+def labelWithEntry(parent, labeltext, row, startcol, **kwargs):
+    entry = Tk.Entry(master=parent, **kwargs)
+    label = Tk.Label(text=labeltext)
+    label.grid(row=row, column=startcol)
+    entry.grid(row=row, column=startcol+1)
+
+    return label, entry
+
+
+
 if __name__ == '__main__':
     datagen = DataGenerator()
     datagen.start()
@@ -73,9 +83,38 @@ if __name__ == '__main__':
     # toolbar
     toolbar = NavigationToolbar2TkAgg(canvas, root)
     toolbar.update()
-    canvas._tkcanvas.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+    canvas._tkcanvas.pack(side=Tk.TOP, expand=1)
 
-    button = Tk.Button(master=root, text='update', command=updategraph)
-    button.pack(side=Tk.BOTTOM)
+    # widget for feedback
+    frame = Tk.LabelFrame(root, text="Feedback_1")
+    frame.pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+    startbutton = Tk.Button(master=frame, text="Start", command=updategraph)
+    startbutton.grid(row=1,column=1)
+
+    stopbutton = Tk.Button(master=frame, text="Stop", command=updategraph)
+    stopbutton.grid(row=1,column=2)
+
+    lockSwitch = Tk.Checkbutton(master=frame, text="Lock")
+    lockSwitch.grid(row=1, column=3)
+
+    Tk.Label(master=frame, text="Max T").grid(row=2, column=1)
+    max_value_regulator_field = Tk.Entry(master=frame, width=5)
+    max_value_regulator_field.grid(row=2,column=2)
+
+    max_value_regulator_field.insert(0,2)
+    Tk.Label(master=frame, text="Min T").grid(row=2, column=3)
+    min_value_regulator_field = Tk.Entry(master=frame, width=5)
+    min_value_regulator_field.grid(row=2,column=4)
+    
+    Tk.Label(master=frame,text="Max sensor").grid(row=2, column=5)
+    max_value_sensor_field = Tk.Entry(master=frame, width=5)
+    max_value_sensor_field.grid(row=2, column=6)
+
+    Tk.Label(master=frame, text="Min sensor").grid(row=2, column=7)
+    min_value_sensor_field = Tk.Entry(master=frame, width=5)
+    min_value_sensor_field.grid(row=2, column=8)
+
+
     Tk.mainloop()
 
