@@ -1,3 +1,5 @@
+import numpy as np
+
 class Regulator:
     def __init__(self):
         self.name = "Override me"
@@ -21,6 +23,10 @@ class Regulator:
 
     def get_value(self):
         """ Return the current value of the regulator """
+        pass
+
+    def get_set_value(self):
+        """ Return the current set value of the regulator """
         pass
 
 class T255ControllerSim(Regulator):
@@ -48,6 +54,12 @@ class T255ControllerSim(Regulator):
         else:
             self.current_temperature -= amount
 
+    def get_value(self):
+        return self.current_temperature + np.random.rand()
+
+    def get_set_value(self):
+        return self.current_temperature
+
 class HighTemperatureException(Exception):
     def __init__(self, temperature):
         self.temperature = temperature
@@ -62,8 +74,6 @@ class LowTemperatureException(Exception):
 
     def __str__(self):
         return "Low temperature reached for t=%f" % self.temperature
-
-    
 
 if __name__ == '__main__':
     with T255ControllerSim() as t255:
