@@ -25,6 +25,7 @@ class SensorSim(Sensor):
         self.average = 0.0
         self._std = 0.5
         Sensor.__init__(self)
+        self.unit = 'V'
     
     def getMeasurement(self):
         self.signal = np.random.rand(self.signal_size)

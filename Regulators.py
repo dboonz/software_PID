@@ -3,6 +3,7 @@ import numpy as np
 class Regulator:
     def __init__(self):
         self.name = "Override me"
+        self.unit = 'C'
 
     def __enter__(self):
         return self
@@ -35,6 +36,7 @@ class T255ControllerSim(Regulator):
         self.max_temperature = 19.3
         self.min_temperature = 18.9
         self.stepsize = 0.1
+        self.unit = 'C'
 
     def perform_positive_feedback(self):
         self.increase_temperature(self.stepsize)
