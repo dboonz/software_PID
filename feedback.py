@@ -57,22 +57,13 @@ class Controller(threading.Thread):
             self.sensor_fraction = getfloat('sensor_fraction')
             self.sensor_low = getfloat('sensor_low')
 
+            self.recalculate_range()
+
             # regulator properties
             self.time_between_measurements =\
                  getfloat('time_between_measurements')
             # time between runs of the feedback loop
             self.feedback_deadtime = getfloat('feedback_deadtime')
-            high = self.sensor_high
-            low  = self.sensor_low
-            fraction = self.sensor_fraction
-            mean = ( high + low ) / 2. 
-            _range = high - low
-
-
-            self.max_signal = mean + _range * 0.5 * fraction
-            self.min_signal = mean - _range * 0.5 * fraction
-            # devices for feedback
-
             from Regulators import T255ControllerSim
             from Sensors import SensorSim
 
@@ -82,6 +73,23 @@ class Controller(threading.Thread):
             print "Error reading configfile"
             raise
 
+    def recalculate_range(self):
+        """ If the parameters of sensor_high and sensor_low have been
+        changed, it is important to recalculate the range  in which the
+        signal can be. This function does just that """
+        high = self.sensor_high
+        low  = self.sensor_low
+        fraction = self.sensor_fraction
+        mean = ( high + low ) / 2. 
+        _range = high - low
+
+
+        self.max_signal = mean + _range * 0.5 * fraction
+        self.min_signal = mean - _range * 0.5 * fraction
+        # devices for feedback
+
+
+
     def run(self):
         """ Main loop: Perform measurements when the feedback loop is on
         """
@@ -90,8 +98,8 @@ class Controller(threading.Thread):
             while not self.stop:
                 print "Taking measurement"
                 self.takeMeasurement()
-                print "performing feedback"
                 if self.feedback:
+                    print "Performing feedback"
                     self.performFeedback()
                 time.sleep(self.time_between_measurements - 0.1)
 
@@ -112,6 +120,7 @@ class Controller(threading.Thread):
 
     def takeMeasurement(self):
         last_sensor_value = self.sensor.getMeasurement()
+
         last_regulator_value = self.regulator.get_value()
         last_measurement_time = time.time()
 
@@ -125,9 +134,6 @@ class Controller(threading.Thread):
             print "Queue full, not appending anymore"
 
 
-
-
-    
     def performFeedback(self, debug=True):
         """ Do the feedback. if debug == True, show the values """
         if time.time() - self.lastfeedbacktime < self.feedback_deadtime:
@@ -174,9 +180,15 @@ class ControllerWidget:
         self.parent = parent
         self.section = section
 
+        
+
 
         #  create controller
         self.controller = Controller(configurationfile, section)
+        self.time_axis = []
+        self.regulator_axis = []
+        self.sensor_axis = []
+
 
         self.createControlButtons()
 
@@ -185,6 +197,63 @@ class ControllerWidget:
         # start thread
         self.controller.start()
 
+    def updateData(self):
+        """ It is possible to get the data from the feedback loop """
+        appenddata = lambda l, s: l.append(s.get_nowait())
+        contr = self.controller
+        try:
+            appenddata(self.time_axis,contr.time_queue)
+            appenddata(self.sensor_axis, contr.sensor_queue)
+            appenddata(self.regulator_axis, contr.regulator_queue)
+        except Queue.Empty:
+            pass
+   
+    def processWidgets(self):
+        # startstopbutton
+        
+        self.controller.stop = not self.startstopVar.get()
+        self.controller.feedback = self.feedbackVar.get()
+
+        # process all text fields
+        sc = self.controller
+        fields = [sc.sensor_high, sc.sensor_low, sc.sensor_fraction]
+        for i in range(len(fields)): #  make any incorrect input red
+            try:
+                float(self.entryfields[i].get())
+                self.entryfields[i]['fg']='black'
+            except ValueError:
+                self.entryfields[i]['fg']='red'
+        try : # set all sensor values to their new values
+            sc.sensor_high = float(self.sens_high_entry.get())
+
+            sc.sensor_low = float(self.sens_low_entry.get())
+
+            sc.sensor_fraction = float(self.sens_fraction_entry.get())
+
+            sc.recalculate_range()
+        except:
+            pass
+
+
+
+        try:
+            th = float(self.regulator_max_entry.get())
+            self.regulator_max_entry['fg']='black'
+        except ValueError:
+            self.regulator_max_entry['fg'] = 'red'
+
+        try:
+            tl = float(self.regulator_min_entry.get())
+            self.regulator_min_entry['fg']='black'
+        except ValueError:
+            self.regulator_min_entry['fg'] = 'red'
+
+        try :
+            self.controller.regulator.set_limits(tl,th)
+        except UnboundLocalError:
+            print "Could not set temperature limits"
+
+
 
     def createControlButtons(self):
         """ Create all the widgets that are needed to control the device"""
@@ -192,13 +261,19 @@ class ControllerWidget:
         self.frame.pack(side=Tk.BOTTOM, fill=Tk.BOTH, expand=1)
 
         # startstopbutton
-        self.startstopcheckbox = Tk.Checkbutton(self.frame,text="Run")
+        self.startstopVar = Tk.BooleanVar()
+        self.startstopcheckbox = Tk.Checkbutton(self.frame,text="Run",
+                variable=self.startstopVar)
         self.startstopcheckbox.grid(row=0)
 
         # feedbackbutton
-        self.feedbackbutton = Tk.Checkbutton(self.frame, text="Feedback active")
+        self.feedbackVar = Tk.BooleanVar()
+        self.feedbackbutton = Tk.Checkbutton(self.frame, 
+                                  text="Feedback active", 
+                                  variable=self.feedbackVar)
         self.feedbackbutton.grid(row=0, column=1)
 
+        self.entryfields = []
         # Sensor high and low, and range
         Tk.Label(self.frame, text="Sensor high [%s]" %
                 self.controller.sensor.unit).grid(row=1,column=0)
@@ -220,12 +295,16 @@ class ControllerWidget:
         self.sens_low_entry.insert(0,self.controller.sensor_low)
         self.sens_fraction_entry.insert(0,self.controller.sensor_fraction)
 
+        self.entryfields.append(self.sens_high_entry)
+        self.entryfields.append(self.sens_low_entry)
+        self.entryfields.append(self.sens_fraction_entry)
         # Controller high, low 
 
         Tk.Label(self.frame, text="Regulator Max [%s]" %
                 self.controller.regulator.unit).grid(row=2, column=0)
         self.regulator_max_entry = Tk.Entry(self.frame, width=5)
         self.regulator_max_entry.grid(row=2, column=1)
+        
         
         Tk.Label(self.frame, text="Regulator Min [%s]" %
                 self.controller.regulator.unit).grid(row=2, column=2,
@@ -237,6 +316,9 @@ class ControllerWidget:
         # start with default values
         self.regulator_min_entry.insert(0,self.controller.regulator.min_temperature)
         self.regulator_max_entry.insert(0,self.controller.regulator.max_temperature)
+
+        self.entryfields.append(self.regulator_min_entry)
+        self.entryfields.append(self.regulator_max_entry)
 
         # keep track of the last 100 measurements to plot in a circular
         # buffer

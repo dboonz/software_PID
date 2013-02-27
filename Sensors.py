@@ -8,7 +8,7 @@ class Sensor:
         self.signal = np.array([0]*self.signal_size)
 
     def getMeasurement(self):
-        """ update self.signal """
+        """ update self.signal. Return average value """
         pass
 
     def close(self):
@@ -34,9 +34,10 @@ class SensorSim(Sensor):
                                        self._std,
                                        self.signal_size)
 
-        self.average = np.random.rand()*100 - 50
+        self.average = 3 + 0.5*np.random.rand()
 
-        self._std = np.random.rand() * 20 
+        self._std = np.random.rand() * 0.05
+        return self.average 
 
     def mean(self):
         """ Return the mean of the last signal"""
