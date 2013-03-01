@@ -1,21 +1,20 @@
+import ConfigParser
 import numpy as np
 import time
 
+
 class Regulator:
     def __init__(self):
-        self.name = "Override me"
-        self.unit = 'C'
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
+        self.initialize()
 
     def close(self):
         """ Called upon ending of the program. Put anything in that has to
         be done in the end, for instance closing a serial port """
         print "Closing t255"
+
+    def initialize(self):
+        """ Put everything in this method that is needed to initialize the device"""
+        pass
 
     def perform_positive_feedback(self):
         pass
@@ -31,56 +30,68 @@ class Regulator:
         """ Return the current set value of the regulator """
         pass
 
-    def get_limits(self):
-        """ Return the limits for the regulator. For instance, maximum
-        temperature, in the form of a tuple min, max"""
-        pass
+    def __enter__(self):
+        return self
 
-    def set_limits(self, lo_limit, hi_limit):
-        """ Set the limits to low and high limit """
-        pass
+    def __exit__(self, type, value, traceback):
+        self.close()
+
 
 class T255ControllerSim(Regulator):
-    def __init__(self):
-        self.current_temperature = 19.1
-        self.max_temperature = 19.3
-        self.min_temperature = 18.9
-        self.stepsize = 0.1
-        self.unit = 'C'
+    """ Simulator for the T255 controller """
+    def __init__(self, section_name):
+        self.section_name = section_name
+        Regulator.__init__(self)
 
-    def get_limits(self):
-        return self.min_temperature, self.max_temperature
+    def initialize(self):
+        """ Read in configuration """
+        self.configparser = ConfigParser.SafeConfigParser()
+        self.configparser.read("Regulators.ini")
 
-    def set_limits(self, lo_limit, hi_limit):
-        if lo_limit is not None:
-            self.min_temperature = lo_limit
-        if hi_limit is not None:
-            self.max_temperature = hi_limit
+        get = lambda s:self.configparser.get(self.section_name,s)
+        getfloat = lambda s:self.configparser.getfloat(self.section_name, s)
+        getint = lambda s:self.configparser.getint(self.section_name, s)
 
-    def perform_positive_feedback(self):
-        self.increase_temperature(self.stepsize)
+        self.unit = get('unit')
+        self.comport = getint('comport')
+        self.timeout = getfloat('timeout')
 
-    def perform_negative_feedback(self):
-        self.decrease_temperature(self.stepsize)
+        self.current_temperature = getfloat('start_temperature')
+        self.stepsize = getfloat('stepsize')
+        self.current_set_temperature = self.current_temperature
+        self.current_set_temperature_t0 = time.time()
+        self.change_temperature(+3)
 
-    def increase_temperature(self, amount):
-        if(self.current_temperature + amount > self.max_temperature):
-            raise HighTemperatureException(self.current_temperature)
-        else:
-            self.current_temperature += amount
 
-    def decrease_temperature(self, amount):
-        if self.current_temperature - amount < self.min_temperature:
-            raise LowTemperatureException(self.current_temperature)
-        else:
-            self.current_temperature -= amount
+    def change_temperature(self, amount):
+        """ Change the temperature by amount (positive is increasing """
+        self.current_temperature = self.get_temperature()
+        self.current_set_temperature += 5.*amount
+        self.current_set_temperature_t0 = time.time()
+
+    def get_temperature(self):
+        cur_temp = self.current_temperature
+        cur_set_temp = self.current_set_temperature
+        dtemp = cur_temp - cur_set_temp
+        dt = time.time() - self.current_set_temperature_t0
+        # slowly converge to the new temperature
+        cur_temp = cur_temp - (1.-np.exp(-dt/10.))*dtemp
+        return cur_temp
 
     def get_value(self):
-        time.sleep(0.5) # takes some time
-        return self.current_temperature + np.random.rand()*0.02
+        """ Override abstract class """
+        return self.get_temperature()
 
     def get_set_value(self):
-        return self.current_temperature
+        """ Override abstract class """
+        return self.current_set_temperature
+
+    def perform_positive_feedback(self):
+        self.change_temperature(self.stepsize)
+
+    def perform_negative_feedback(self):
+        self.change_temperature(-self.stepsize)
+
 
 class HighTemperatureException(Exception):
     def __init__(self, temperature):
@@ -98,7 +109,7 @@ class LowTemperatureException(Exception):
         return "Low temperature reached for t=%f" % self.temperature
 
 if __name__ == '__main__':
-    with T255ControllerSim() as t255:
+    with T255ControllerSim('T255Sim') as t255:
         print "Press + to increase temperature\npress - to decrease, x to stop"
         stop = False
         while stop is False:
@@ -114,5 +125,6 @@ if __name__ == '__main__':
                 print "High temperature reached. Not doing it."
             except LowTemperatureException:
                 print "Low temperature reached, not doing it."
-            print "Current temp: " , t255.current_temperature
+            print 'T: ', t255.get_value()
+            print 'T_set:', t255.get_set_value()
 

@@ -1,19 +1,33 @@
 import numpy as np
 import time
+import ConfigParser 
 
 class Sensor:
+    """ Sensor for the software_PID. Set up by an .ini file. 
+    
+    To create a new device, override these methods and put in __ini__:
+     def __init__(self, section_name):
+        '''Create the simulator'''
+        self.section_name = section_name
+        Sensor.__init__(self)
 
+    """
     def __init__(self):
-        self.signal_size = 10000
+        self.signal = np.array([- 99e99 ])
+        self.initialize()
 
-        self.signal = np.array([0]*self.signal_size)
+    def initialize(self):
+        """ Initialize the device """
+        pass
+
 
     def getMeasurement(self):
         """ update self.signal. Return average value """
         pass
 
     def close(self):
-        print "Closing sensor"
+        """ To be called whenever the application closes, for instance to clear a device """
+        pass
 
     def __enter__(self):
         return self
@@ -22,24 +36,36 @@ class Sensor:
         self.close()
 
 class SensorSim(Sensor):
-    def __init__(self):
-        self.t0 = time.time()
-        self.average = 0.0
-        self._std = 0.5
+    def __init__(self, section_name):
+        """ Create the simulator """
+        self.section_name = section_name
         Sensor.__init__(self)
-        self.unit = 'V'
+
+        
+    def initialize(self):
+        """ Read in all the relevant options from Sensors.ini"""
+        self.t0 = time.time()
+
+        self.configparser = ConfigParser.SafeConfigParser()
+        self.configparser.read("Sensors.ini")
+
+        # read in all variables
+        get = lambda s:self.configparser.get(self.section_name,s)
+        getfloat = lambda s:self.configparser.getfloat(self.section_name, s)
+
+        self.clockspeed = getfloat("clockspeed")
+        self.signal_size = getfloat("signal_size")
+        self.port = getfloat("port")
+
+        self.average = getfloat("average")
+        self.std = getfloat("std")
     
     def getMeasurement(self):
-        self.signal = np.random.rand(self.signal_size)
-
+        """ Make a pseudo-measurement and return the answer. Takes some time."""
         self.signal = np.random.normal(self.average, 
-                                       self._std,
+                                       self.std,
                                        self.signal_size) +\
         np.linspace(0,1,self.signal_size)*np.sin((self.t0 - time.time())/2.)
-
-#         self.average = 3 + 0.2*np.random.rand()
-
-        self._std = np.random.rand() * 0.05
         time.sleep(0.5)
         return self.average 
 
@@ -52,13 +78,15 @@ class SensorSim(Sensor):
         return self.signal.std()
     
     def SIM_set_average(self, average):
+        """ Set average for simulator"""
         self.average = average
 
     def SIM_set_std(self, std):
-        self._std = std
+        """ Set std for simulator"""
+        self.std = std
 
 if __name__ == '__main__':
-    with SensorSim() as sensor:
+    with SensorSim("NI-USB-DirkSIM") as sensor:
         print "Press a to set average\npress s to set std\npress m to take\
  a measurement,\npress x to stop"
         stop = False

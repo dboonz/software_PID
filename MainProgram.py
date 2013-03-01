@@ -21,17 +21,17 @@ class RootWindow:
         self.setupWindow()
         self.setupGraph()
         self.addWidgets()
-
         self.startMainLoop()
 
     def setupWindow(self):
+        """ Create the window """
         self.root = Tk.Tk()
         self.root.wm_title("Embedding TK")
         Tk.Grid.columnconfigure(self.root,0, weight=1)
         Tk.Grid.rowconfigure(self.root,0, weight=1)
 
     def setupGraph(self):
-        """ Setup a graph in the window"""
+        """ Setup the graph"""
         # create frame to put figure in
         self.figureframe = Tk.Frame(self.root)
         self.figureframe.grid(sticky='NESW')
@@ -55,8 +55,7 @@ class RootWindow:
         self.canvas._tkcanvas.pack(side=Tk.TOP, expand=True)
 
     def addWidgets(self):
-        # create a frame to put all the widgets in.
-
+        """ Add the widget of the feedback loops """
         self.config = ConfigParser.SafeConfigParser()
         self.config.read("./settings.ini")
         self.widgetsFrame = Tk.LabelFrame(self.root, text="Widgets")
