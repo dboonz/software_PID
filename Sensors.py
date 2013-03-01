@@ -21,7 +21,7 @@ class Sensor:
         pass
 
 
-    def getMeasurement(self):
+    def get_value(self):
         """ update self.signal. Return average value """
         pass
 
@@ -60,7 +60,7 @@ class SensorSim(Sensor):
         self.average = getfloat("average")
         self.std = getfloat("std")
     
-    def getMeasurement(self):
+    def get_value(self):
         """ Make a pseudo-measurement and return the answer. Takes some time."""
         self.signal = np.random.normal(self.average, 
                                        self.std,
@@ -111,6 +111,6 @@ if __name__ == '__main__':
                 elif command is 'x':
                     exit(0)
                 elif command is 'm':
-                    sensor.getMeasurement()
+                    sensor.get_value()
             except:
                raise
