@@ -40,6 +40,7 @@ class Regulator:
 class T255ControllerSim(Regulator):
     """ Simulator for the T255 controller """
     def __init__(self, section_name):
+        print "Section name: %s" % section_name
         self.section_name = section_name
         Regulator.__init__(self)
 
@@ -109,7 +110,7 @@ class LowTemperatureException(Exception):
         return "Low temperature reached for t=%f" % self.temperature
 
 if __name__ == '__main__':
-    with T255ControllerSim('T255Sim') as t255:
+    with T255ControllerSim('Comb_baseplate_chiller') as t255:
         print "Press + to increase temperature\npress - to decrease, x to stop"
         stop = False
         while stop is False:
