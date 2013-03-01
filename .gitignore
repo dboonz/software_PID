@@ -1,3 +1,11 @@
+# Vim swap, tags file
+*.swp
+tags
+
+# logs
+*.dat
+
+# compiled python objects
 *.py[cod]
 
 # C extensions
