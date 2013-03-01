@@ -242,11 +242,12 @@ class ControllerWidget:
             self.regulator_min_entry['fg'] = 'red'
 
         try :
-            self.controller.regulator.set_limits(tl,th)
+            self.controller.regulator_min = tl
+            self.controller.regulator_max = th 
         except UnboundLocalError:
             print "Could not set temperature limits"
 
-    def entryWithLabelAndVar(self, parent, label, row, start_col, **kwargs):
+    def entryWithLabelAndVar(self, parent, label, row, start_col, width=5, **kwargs):
         """ Create an entry field with a label and a variable. 
         label is text for the label, row is the row, start_col is the start column,
 
@@ -254,54 +255,43 @@ class ControllerWidget:
         
         Returns content, entry 
         """
-        label = Tk.Label(self.parent, text=label).grid(row=row, column=start_col)
-        content = Tk.StringVar()
-        entry = Tk.Entry(self.parent, textvariable=content, **kwargs)
+        label = Tk.Label(parent, text=label).grid(row=row, column=start_col)
+#        content = Tk.StringVar()
+        content = 0
+        entry = Tk.Entry(parent, width=width, **kwargs)
         entry.grid(row=row, column=start_col+1)
         return content, entry
 
 
 
     def createControlButtons(self):
-        """ Create all the widgets that are needed to control the device"""
+
+#        """ Create all the widgets that are needed to control the device"""
         self.frame = Tk.LabelFrame(self.parent, text=self.section)
         self.frame.pack(side=Tk.BOTTOM, fill=Tk.BOTH, expand=1)
 
-        # startstopbutton
+#
+#        # startstopbutton
         self.startstopVar = Tk.BooleanVar()
         self.startstopcheckbox = Tk.Checkbutton(self.frame,text="Run",
                 variable=self.startstopVar)
         self.startstopcheckbox.grid(row=0)
-
-        # feedbackbutton
+#
+#        # feedbackbutton
         self.feedbackVar = Tk.BooleanVar()
         self.feedbackbutton = Tk.Checkbutton(self.frame, 
                                   text="Feedback active", 
                                   variable=self.feedbackVar)
         self.feedbackbutton.grid(row=0, column=1)
-
+#
         self.entryfields = []
         self.sens_high_string, self.sens_high_entry = self.entryWithLabelAndVar(self.frame, "Sensor high ", 1, 0)
-#        # Sensor high and low, and range
-#        Tk.Label(self.frame, text="Sensor high [%s]" %
-#                self.controller.sensor.unit).grid(row=1,column=0)
-#        self.sens_high_entry = Tk.Entry(self.frame, width=5)
-#        self.sens_high_entry.grid(row=1, column=1)
-#
-#
+
 #
         self.sens_low_string, self.sens_low_entry = self.entryWithLabelAndVar(self.frame, "Sensor low ", 1, 2)
-#        Tk.Label(self.frame, text="Sensor low [%s]" %
-#                self.controller.sensor.unit).grid(row=1,column=2)
-#        self.sens_low_entry = Tk.Entry(self.frame, width=5)
-#        self.sens_low_entry.grid(row=1, column=3)
-#
-        self.sens_fraction_string, self.sens_fraction_entry = self.entryWithLabelAndVar(self.frame, "Sensor fraction ", 1, 2)
-#        Tk.Label(self.frame, text="Sensor fraction [0-1]").grid(row=1,
-#                column=4)
-#        self.sens_fraction_entry = Tk.Entry(self.frame, width=5)
-#        self.sens_fraction_entry.grid(row=1, column=5)
-#
+
+        self.sens_fraction_string, self.sens_fraction_entry = self.entryWithLabelAndVar(self.frame, "Sensor fraction ", 1, 4)
+
         self.sens_high_entry.insert(0,self.controller.sensor_high)
         self.sens_low_entry.insert(0,self.controller.sensor_low)
         self.sens_fraction_entry.insert(0,self.controller.sensor_fraction)
@@ -311,21 +301,10 @@ class ControllerWidget:
         self.entryfields.append(self.sens_fraction_entry)
         # Controller high, low 
 #
-        self.regulator_max_string, self.regulator_max_entry = self.entryWithLabelAndVar(self.frame, "Regulator max ", 1, 2)
-#        Tk.Label(self.frame, text="Regulator Max [%s]" %
-#                self.controller.regulator.unit).grid(row=2, column=0)
-#        self.regulator_max_entry = Tk.Entry(self.frame, width=5)
-#        self.regulator_max_entry.grid(row=2, column=1)
-#        
-#        
-        self.regulator_min_string, self.regulator_min_entry = self.entryWithLabelAndVar(self.frame, "Regulator min ", 1, 2)
-#        Tk.Label(self.frame, text="Regulator Min [%s]" %
-#                self.controller.regulator.unit).grid(row=2, column=2,
-#                        sticky='W')
-#        self.regulator_min_entry = Tk.Entry(self.frame, width=5)
-#        self.regulator_min_entry.grid(row=2, column=3, columnspan=2,
-#                sticky='W')
-#        
+        self.regulator_max_string, self.regulator_max_entry = self.entryWithLabelAndVar(self.frame, "Regulator max ", 2, 0)
+        
+        self.regulator_min_string, self.regulator_min_entry = self.entryWithLabelAndVar(self.frame, "Regulator min ", 2, 2)
+        
 #        # start with default values
         self.regulator_min_entry.insert(0,self.controller.regulator_min)
         self.regulator_max_entry.insert(0,self.controller.regulator_max)
@@ -334,7 +313,6 @@ class ControllerWidget:
         self.entryfields.append(self.regulator_max_entry)
 
         
-
 if __name__ == '__main__':
 #     regulator = Controller("settings.ini", "Baseplate")
 #     regulator.start()
@@ -346,4 +324,5 @@ if __name__ == '__main__':
       bla = ControllerWidget(root,'settings.ini','Baseplate')
       
 #      bla2 = ControllerWidget(root, 'settings.ini', 'Baseplate')
+      print "Starting tk mainloop"
       Tk.mainloop()

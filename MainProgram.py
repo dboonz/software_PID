@@ -66,12 +66,13 @@ class RootWindow:
             "settings.ini", section))
             # plot sensor values
             cd = self.devices[-1] #  current device
+            cc = cd.controller # current controller
             cd.line, = self.axes.plot([],[])
 
             # plot regulator values
             cd.regulator_line, = self.regulator_axis.plot([],[],'--')
             # get regulator limits
-            tl, th = cd.controller.regulator.get_limits()
+            tl, th = cc.regulator_min, cc.regulator_max
             # display temp limits 
             cd.reg_high, = self.regulator_axis.plot([-1e30,
                 1e30],[th, th],'--', label='high lim')
@@ -115,11 +116,15 @@ class RootWindow:
             device.regulator_line.set_xdata(np.array(device.time_axis)-self.t0)
             device.regulator_line.set_ydata(np.array(device.regulator_axis))
 
-
-            self.axes.set_xlim(0, max(device.time_axis)-self.t0)
+            try:
+                self.axes.set_xlim(0, max(device.time_axis)-self.t0)
+            except:
+                self.axes.set_xlim(0,10)
+                #FIXME
 
             # update controller lines
-            tl, th = device.controller.regulator.get_limits()
+            cc = device.controller
+            tl, th = cc.regulator_min, cc.regulator_max
             device.reg_low.set_ydata([tl, tl])
             device.reg_high.set_ydata([th, th])
             self.regulator_axis.set_ylim(tl - 0.5, th + 0.5)
