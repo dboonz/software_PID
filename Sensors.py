@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 class Sensor:
 
@@ -22,6 +23,7 @@ class Sensor:
 
 class SensorSim(Sensor):
     def __init__(self):
+        self.t0 = time.time()
         self.average = 0.0
         self._std = 0.5
         Sensor.__init__(self)
@@ -32,11 +34,13 @@ class SensorSim(Sensor):
 
         self.signal = np.random.normal(self.average, 
                                        self._std,
-                                       self.signal_size)
+                                       self.signal_size) +\
+        np.linspace(0,1,self.signal_size)*np.sin((self.t0 - time.time())/2.)
 
-        self.average = 3 + 0.5*np.random.rand()
+#         self.average = 3 + 0.2*np.random.rand()
 
         self._std = np.random.rand() * 0.05
+        time.sleep(0.5)
         return self.average 
 
     def mean(self):

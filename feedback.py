@@ -1,4 +1,5 @@
 import threading
+import numpy as np
 import time
 from Regulators import HighTemperatureException, LowTemperatureException
 from ConfigParser import SafeConfigParser
@@ -24,8 +25,6 @@ class Controller(threading.Thread):
         try :
             self.stop = False
             self.feedback = True 
-
-            
 
             getstring = lambda s:self.configparser.get(self.label,s)
             getfloat  = lambda s:self.configparser.getfloat(self.label,s)
@@ -56,6 +55,8 @@ class Controller(threading.Thread):
             self.sensor_high = getfloat('sensor_high')
             self.sensor_fraction = getfloat('sensor_fraction')
             self.sensor_low = getfloat('sensor_low')
+            self.sensor_measure_time = self.configparser.getfloat('DAQSIM','sensor_measure_time')
+
 
             self.recalculate_range()
 
@@ -142,9 +143,16 @@ class Controller(threading.Thread):
             mean = self.sensor.mean()
             std = self.sensor.std()
 
+            deriv = np.diff(self.sensor.signal).sum() * self.time_between_measurements / self.sensor_measure_time
+
+            print "mean: %.2f std: %.2f deriv:%.2f predicted value: %.2f" %\
+                        (mean, std, deriv, mean + deriv)
+
             if debug is True:
                 print "Mean signal: %3.2f" % mean
                 print "std signal : %3.2f" % std
+
+            # predict the next value 
             
             if mean > self.max_signal:
                 if debug:
@@ -188,7 +196,6 @@ class ControllerWidget:
         self.time_axis = []
         self.regulator_axis = []
         self.sensor_axis = []
-
 
         self.createControlButtons()
 
