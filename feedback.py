@@ -126,8 +126,6 @@ class Controller(threading.Thread):
         with open(self.logfile,'a') as logfile:
             logfile.write(message)
 
-
-
     def takeMeasurement(self):
         """ Retrieve a measurement. """
         self.last_sensor_value = self.sensor.get_value()
@@ -138,6 +136,7 @@ class Controller(threading.Thread):
         # the main program to put them in a graph.
         try :
             self.time_queue.put_nowait(self.last_measurement_time)
+            print "time queue length: ", self.time_queue.qsize()
             self.sensor_queue.put_nowait(self.last_sensor_value)
             self.regulator_queue.put_nowait(self.last_regulator_value)
         except Queue.Full:
@@ -190,14 +189,14 @@ class ControllerWidget:
         print "Created control buttons"
 
         # start thread 
-#        self.controller.start()
+        self.controller.start()
 
     def updateData(self):
         """ It is possible to get the data from the feedback loop """
         appenddata = lambda l, s: l.append(s.get_nowait())
         contr = self.controller
         try:
-            appenddata(self.time_axis,contr.time_queue)
+            appenddata(self.time_axis, contr.time_queue)
             appenddata(self.sensor_axis, contr.sensor_queue)
             appenddata(self.regulator_axis, contr.regulator_queue)
         except Queue.Empty:
@@ -218,16 +217,11 @@ class ControllerWidget:
                 self.entryfields[i]['fg']='red'
         try : # set all sensor values to their new values
             sc.sensor_high = float(self.sens_high_entry.get())
-
             sc.sensor_low = float(self.sens_low_entry.get())
-
             sc.sensor_fraction = float(self.sens_fraction_entry.get())
-
             sc.recalculate_range()
         except:
-            pass
-
-
+            print "One of the entry fields is not correct. Not doing anything"
 
         try:
             th = float(self.regulator_max_entry.get())
@@ -245,7 +239,7 @@ class ControllerWidget:
             self.controller.regulator_min = tl
             self.controller.regulator_max = th 
         except UnboundLocalError:
-            print "Could not set temperature limits"
+            print "Could not set regulator limits"
 
     def entryWithLabelAndVar(self, parent, label, row, start_col, width=5, **kwargs):
         """ Create an entry field with a label and a variable. 

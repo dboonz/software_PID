@@ -98,17 +98,20 @@ class RootWindow:
         Tk.mainloop()
 
     def updateVariables(self):
-       """ Update the variables for every feedback loop """
+       """
+       Update any variables that may have been changed in the widget to
+       the feedback loop 
+       """
        for device in self.devices:
            device.processWidgets()
            device.updateData()
 
     def updateGraph(self):
         """ Update the graph, for every item """
+        print "Updating graph"
         self.updateVariables()
 
         for device in self.devices:
-#             self.axes.plot(device.time_axis, device.sensor_axis)
             # update graph data
             device.line.set_xdata(np.array(device.time_axis) - self.t0)
             device.line.set_ydata(np.array(device.sensor_axis))
@@ -118,8 +121,10 @@ class RootWindow:
 
             try:
                 self.axes.set_xlim(0, max(device.time_axis)-self.t0)
-            except:
-                self.axes.set_xlim(0,10)
+            except ValueError:
+                self.axes.set_autoscalex_on(True)
+                print device.sensor_axis
+                print device.time_axis
                 #FIXME
 
             # update controller lines
@@ -133,7 +138,6 @@ class RootWindow:
             # sensor 
             sensmax, sensmin = dc.max_signal, dc.min_signal 
             senshigh, senslow = device.controller.max_signal, device.controller.sensor_low 
-            print "Sensor low and high: ", senslow, senshigh
             self.axes.set_ylim(senslow , senshigh)
             device.sens_low_line.set_ydata([sensmin]*2)
             device.sens_high_line.set_ydata([sensmax]*2)

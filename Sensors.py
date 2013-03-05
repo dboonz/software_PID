@@ -65,7 +65,7 @@ class SensorSim(Sensor):
         self.signal = np.random.normal(self.average, 
                                        self.std,
                                        self.signal_size) +\
-        np.linspace(0,1,self.signal_size)*np.sin((self.t0 - time.time())/2.)
+        np.linspace(0,100,self.signal_size)*np.sin((self.t0 - time.time())/20.)
         time.sleep(0.5)
         return self.average 
 
